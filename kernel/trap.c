@@ -52,40 +52,68 @@ int checkAddress(uint64 addr, struct proc *p) {
 void
 usertrap(void) {
     int which_dev = 0;
-    struct proc *p = myproc();
+    
 
     if ((r_sstatus() & SSTATUS_SPP) != 0)
         panic("usertrap: not from user mode");
 
+    // send interrupts and exceptions to kerneltrap(),
+    // since we're now in the kernel
     w_stvec((uint64)kernelvec);
+    
+    struct proc *p = myproc();
+
+    // save user program counter
     p->trapframe->epc = r_sepc();
 
     if (r_scause() == 8) {
-        // Handle system call
-        if (p->killed) exit(-1);
-        p->trapframe->epc += 4;
-        intr_on();
-        syscall();
+      // system call
+      if (p->killed)
+        exit(-1);
+
+      // sepc points to the ecall instructions
+      // but we want to return to the next instruction.
+      p->trapframe->epc += 4;
+
+      // an interrupt will change sstatus &c registers
+      // so don't enable until done with those registers.
+      intr_on();
+      syscall();
+      
     } else if ((which_dev = devintr()) != 0) {
-        // Handle device interrupts
-    } else if (r_scause() == 13 || r_scause() == 15) {
-        // Handle page fault
-        if (!checkAddress(r_stval(), p)) {
-            p->killed = 1;
-            exit(-1);
-        }
-        void *physical_mem = kalloc();
-        if (!physical_mem) {
-            printf("usertrap(): out of memory\n");
-            p->killed = 1;
-            exit(-1);
-        }
-        if (mappages(p->pagetable, PGROUNDDOWN(r_stval()), PGSIZE, (uint64)physical_mem, PTE_R | PTE_W | PTE_X | PTE_U) < 0) {
-            kfree(physical_mem);
-            printf("usertrap(): mappages failed\n");
-            p->killed = 1;
-            exit(-1);
-        }
+        // ok
+    }
+
+    /* Task 3 Hw4 */
+    else if (r_scause() == 13 || r_scause() == 15) {
+
+      uint64 FaultAddr = r_stval();
+      printf("addr: %p p-<sz: %d\n",FaultAddr,p->sz);
+
+      if ( !checkAddress ( FaultAddr , p )){
+        p->killed = 1;
+        exit(-1);
+      }
+
+      void* PhysicalFrame = kalloc();
+
+      if(PhysicalFrame == 0){
+        // Allocation Failed
+        printf("usertrap(): out of memory, pid=%d, faluting address=%p\n", p->pid, FaultAddr);
+        p->killed = 1;
+        exit(-1);
+      }
+      
+      // Round down the FaultAddr
+      uint64 FaultPageAddr = PGROUNDDOWN(FaultAddr);
+
+      if (mappages(p->pagetable, FaultPageAddr, PGSIZE, (uint64)PhysicalFrame, PTE_R | PTE_W | PTE_X | PTE_U) < 0) {
+        kfree(PhysicalFrame);
+        printf("usertrap(): mappages failed\n");
+        p->killed = 1;
+        exit(-1);
+      }
+    
     } else {
         // Handle unexpected traps
         printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
@@ -93,9 +121,14 @@ usertrap(void) {
         p->killed = 1;
     }
 
-    if (p->killed) exit(-1);
-    if (which_dev == 2) yield();
+    if (p->killed)
+      exit(-1);
 
+    // give up the CPU if this is a timer interrupt.
+    if (which_dev == 2)
+      yield();
+
+    //printf("exiting usertrap()\n");
     usertrapret();
 }
 //
