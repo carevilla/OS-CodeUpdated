@@ -88,7 +88,7 @@ usertrap(void) {
     else if (r_scause() == 13 || r_scause() == 15) {
 
       uint64 FaultAddr = r_stval();
-      printf("addr: %p p-<sz: %d\n",FaultAddr,p->sz);
+      //printf("addr: %p p-<sz: %d\n",FaultAddr,p->sz);
 
       if ( !checkAddress ( FaultAddr , p )){
         p->killed = 1;

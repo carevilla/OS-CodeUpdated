@@ -6,6 +6,7 @@
 #include "proc.h"
 #include "pstat.h"
 #include "defs.h"
+#include "stat.h"
 
 struct cpu cpus[NCPU];
 
@@ -160,6 +161,35 @@ freeproc(struct proc *p)
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
+  // Hw 5 added
+  //Task 1c.
+  //Code to be added to freeproc() in proc.c (after p->trapframe = 0;):
+
+  for (int i = 0; i < MAX_MMR; i++) {
+    int dofree = 0;
+    if (p->mmr[i].valid == 1) {
+      if (p->mmr[i].flags & MAP_PRIVATE)
+        dofree = 1;
+      else { // MAP_SHARED
+        acquire(&mmr_list[p->mmr[i].mmr_family.listid].lock);
+        if (p->mmr[i].mmr_family.next == &(p->mmr[i].mmr_family)) { // no other family members
+          dofree = 1;
+          release(&mmr_list[p->mmr[i].mmr_family.listid].lock);
+          dealloc_mmr_listid(p->mmr[i].mmr_family.listid);
+        } else {  // remove p from mmr family
+          (p->mmr[i].mmr_family.next)->prev = p->mmr[i].mmr_family.prev;
+          (p->mmr[i].mmr_family.prev)->next = p->mmr[i].mmr_family.next;
+          release(&mmr_list[p->mmr[i].mmr_family.listid].lock);
+        }
+      }
+      // Remove region mappings from page table
+      for (uint64 addr = p->mmr[i].addr; addr < p->mmr[i].addr + p->mmr[i].length; addr += PGSIZE)
+        if (walkaddr(p->pagetable, addr))
+          uvmunmap(p->pagetable, addr, 1, dofree);
+    }
+  }
+
+  
   if(p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
   p->pagetable = 0;
