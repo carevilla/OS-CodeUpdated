@@ -110,10 +110,10 @@ extern uint64 sys_freepmem(void);
 extern uint64 sys_mmap(void);
 extern uint64 sys_munmap(void);
 //Hw6
-extern int sys_sem_init(void);
-extern int sys_sem_destroy(void);
-extern int sys_sem_wait(void);
-extern int sys_sem_post(void);
+extern uint64 sys_sem_init(void);
+extern uint64 sys_sem_destroy(void);
+extern uint64 sys_sem_wait(void);
+extern uint64 sys_sem_post(void);
 
 static uint64 (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
