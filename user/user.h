@@ -1,6 +1,7 @@
 struct stat;
 struct rtcdate;
 struct pstat;
+struct sem_t; // Hw6
 
 // system calls
 int fork(void);
@@ -29,6 +30,11 @@ uint64 freepmem(void);
 //Hw 5
 void* mmap(void*, int, int, int, int, void*);
 int munmap(void*, int);
+// Hw6 Unnamed semaphore operations
+int sem_init(struct sem_t* sem, int pshared, unsigned int value);
+int sem_destroy(struct sem_t* sem);
+int sem_wait(struct sem_t* sem);
+int sem_post(struct sem_t* sem);
 
 // ulib.c
 int stat(const char*, struct stat*);
