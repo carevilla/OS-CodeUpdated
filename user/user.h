@@ -31,10 +31,10 @@ uint64 freepmem(void);
 void* mmap(void*, int, int, int, int, void*);
 int munmap(void*, int);
 // Hw6 Unnamed semaphore operations
-int sem_init(struct sem_t* sem, int pshared, unsigned int value);
-int sem_destroy(struct sem_t* sem);
-int sem_wait(struct sem_t* sem);
-int sem_post(struct sem_t* sem);
+int sem_init(sem_t* sem, int pshared, unsigned int value);
+int sem_destroy(sem_t* sem);
+int sem_wait(sem_t* sem);
+int sem_post(sem_t* sem);
 
 // ulib.c
 int stat(const char*, struct stat*);
