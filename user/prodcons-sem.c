@@ -24,7 +24,7 @@ void producer()
 {
   while(1) {
 //    printf("producer calling sem_wait\n");
-    sem_wait(&(buffer->free));
+    sem_wait(&buffer->free);
     sem_wait(&buffer->lock);
     if (buffer->num_produced >= MAX) {
         sem_post(&buffer->free);
