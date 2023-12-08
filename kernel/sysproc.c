@@ -137,7 +137,7 @@ sys_sem_init(void){
     return -1;
   }
   
-  if (!pshared ) return -1;
+  if (pshared==0 ) return -1;
 
   index = semalloc();
   semtable.sem[index].count = val;

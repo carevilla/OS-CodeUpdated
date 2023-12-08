@@ -32,6 +32,7 @@ semdealloc(int curIndex){
   acquire(&semtable.sem[curIndex].lock);
   if(curIndex >= 0 && curIndex < NSEM){
     semtable.sem[curIndex].valid = 0;
+    semtable.sem[curIndex].count = 0;
   }
   release(&semtable.sem[curIndex].lock);
 }
